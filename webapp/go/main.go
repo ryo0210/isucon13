@@ -4,22 +4,29 @@ package main
 // sqlx的な参考: https://jmoiron.github.io/sqlx/
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 
 	"github.com/go-sql-driver/mysql"
+	"github.com/gorilla/sessions"
 	"github.com/jmoiron/sqlx"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
-	echolog "github.com/labstack/gommon/log"
+	slogotel "github.com/remychantenay/slog-otel"
+	slogecho "github.com/samber/slog-echo"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel"
 )
 
 const (
@@ -93,7 +100,7 @@ func connectDB(logger echo.Logger) (*sqlx.DB, error) {
 		conf.ParseTime = parseTime
 	}
 
-	db, err := sqlx.Open("mysql", conf.FormatDSN())
+	db, err := otelsqlx.Open("mysql", conf.FormatDSN())
 	if err != nil {
 		return nil, err
 	}
@@ -118,15 +125,51 @@ func initializeHandler(c echo.Context) error {
 	})
 }
 
+const name = "isupipe-go"
+
+var (
+	tracer = otel.Tracer(name)
+	meter  = otel.Meter(name)
+	logger = otelslog.NewLogger(name)
+)
+
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
+	shutdownOtel, err := InitOtelProvider(ctx)
+	if err != nil {
+		slog.Error(err.Error())
+		os.Exit(1)
+	}
+	defer shutdownOtel(ctx)
+
+	logger := slog.New(
+		slogotel.OtelHandler{
+			Next: slog.NewJSONHandler(os.Stdout, nil),
+		},
+	)
+	slog.SetDefault(logger)
 	e := echo.New()
-	e.Debug = true
-	e.Logger.SetLevel(echolog.DEBUG)
-	e.Use(middleware.Logger())
+	e.Debug = true // スコア上げる際は外す
+	e.Use(otelecho.Middleware(
+		"api",
+		otelecho.WithSkipper(func(c echo.Context) bool {
+			return c.Path() == "/api/initialize"
+		}),
+	))
+	e.Use(slogecho.NewWithConfig(
+		logger,
+		slogecho.Config{
+			WithSpanID:  true,
+			WithTraceID: true,
+		},
+	))
 	cookieStore := sessions.NewCookieStore(secret)
 	cookieStore.Options.Domain = "*.u.isucon.local"
 	e.Use(session.Middleware(cookieStore))
 	e.Use(middleware.Recover())
+	e.Use(otelecho.Middleware("my-server"))
 
 	// 初期化
 	e.POST("/api/initialize", initializeHandler)
@@ -195,8 +238,9 @@ func main() {
 
 	subdomainAddr, ok := os.LookupEnv(powerDNSSubdomainAddressEnvKey)
 	if !ok {
-		e.Logger.Errorf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
-		os.Exit(1)
+		// e.Logger.Errorf("environ %s must be provided", powerDNSSubdomainAddressEnvKey)
+		// os.Exit(1)
+		subdomainAddr = "127.0.0.1"
 	}
 	powerDNSSubdomainAddress = subdomainAddr
 
