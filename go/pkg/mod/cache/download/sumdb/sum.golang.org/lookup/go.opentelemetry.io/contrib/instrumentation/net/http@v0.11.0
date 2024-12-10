@@ -1,9 +1,0 @@
-1559548
-go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0 h1:ufewgDRmtrrdDpPgm7b4/gr4RXLS7KhDttAhyThtYS4=
-go.opentelemetry.io/contrib/instrumentation/net/http v0.11.0/go.mod h1:SBUSwgw/714EVSKHaAttjlJqbBv1YkUi+qdaN1oxMGE=
-
-go.sum database tree
-32577277
-++sShe7AQ0N5COipFNY9JzDHcG8gyaG3NbVSu5wfLd4=
-
-— sum.golang.org Az3grrgdF3SPTUruv1syVv6mFLbRj2NoRHrQsG2OxLbekceFz6ygjngMQbR4hj62NKtK9YabX1gOiaAyMrfEhXCEKwU=

@@ -1,9 +1,0 @@
-31519413
-go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.32.0 h1:cC2yDI3IQd0Udsux7Qmq8ToKAx1XCilTQECZ0KDZyTw=
-go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.32.0/go.mod h1:2PD5Ex6z8CFzDbTdOlwyNIUywRr1DN0ospafJM1wJ+s=
-
-go.sum database tree
-32577328
-ZIza3OPheD47mgFx+TW2Q8Tbu+IiPJhp+UfhUxbC5Ao=
-
-— sum.golang.org Az3gri1qi4Eq33sSr0PpYiyk/L88f3Z1A3TzIBMUgzHTH9XKl5kGLSKIjPZbi9MSzvkNPuwZArzKQAXx6Z3KuPM2OQU=
