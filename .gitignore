@@ -29,3 +29,4 @@ go.work
 
 go/
 local/
+webapp/rust/target/
