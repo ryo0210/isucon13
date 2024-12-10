@@ -10,11 +10,14 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
-	sdklog "go.opentelemetry.io/otel/sdk/log"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
+
+// 参考というかコピペ
+// https://developer.hatenastaff.com/entry/2024/10/16/180559
 
 type shutdownFunc func(context.Context) error
 
@@ -71,11 +74,11 @@ func initTracerProvider(ctx context.Context, res *resource.Resource) (func(conte
 	if err != nil {
 		return nil, fmt.Errorf("failed to create trace exporter: %w", err)
 	}
-	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+	bsp := trace.NewBatchSpanProcessor(traceExporter)
 
-	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(res),
-		sdktrace.WithSpanProcessor(bsp),
+	tracerProvider := trace.NewTracerProvider(
+		trace.WithResource(res),
+		trace.WithSpanProcessor(bsp),
 	)
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
@@ -87,9 +90,9 @@ func initMeterProvider(ctx context.Context, res *resource.Resource) (func(contex
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics exporter: %w", err)
 	}
-	meterProvider := sdkmetric.NewMeterProvider(
-		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
-		sdkmetric.WithResource(res),
+	meterProvider := metric.NewMeterProvider(
+		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
+		metric.WithResource(res),
 	)
 	otel.SetMeterProvider(meterProvider)
 	return meterProvider.Shutdown, nil
@@ -100,10 +103,10 @@ func initLoggerProvider(ctx context.Context, res *resource.Resource) (func(conte
 	if err != nil {
 		return nil, fmt.Errorf("failed to create log exporter: %w", err)
 	}
-	processor := sdklog.NewBatchProcessor(logExporter)
-	loggerProvider := sdklog.NewLoggerProvider(
-		sdklog.WithProcessor(processor),
-		sdklog.WithResource(res),
+	processor := log.NewBatchProcessor(logExporter)
+	loggerProvider := log.NewLoggerProvider(
+		log.WithProcessor(processor),
+		log.WithResource(res),
 	)
 	global.SetLoggerProvider(loggerProvider)
 	return loggerProvider.Shutdown, nil
