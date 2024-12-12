@@ -87,6 +87,7 @@ func initTracerProvider(ctx context.Context, res *resource.Resource) (func(conte
 
 func initMeterProvider(ctx context.Context, res *resource.Resource) (func(context.Context) error, error) {
 	metricExporter, err := otlpmetrichttp.New(ctx)
+	// metricExporter, err := stdoutmetric.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics exporter: %w", err)
 	}
