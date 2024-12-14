@@ -14,7 +14,7 @@ TAG=isupipe:latest
 .PHONY: build
 build:
 	CGO_ENABLED=0   $(BUILD) -o $(DESTDIR)/isupipe -ldflags "-s -w"
-
+	sudo systemctl restart isupipe-go.service
 .PHONY: darwin
 darwin:
 	CGO_ENABLED=0 $(DARWIN_TARGET_ENV) $(BUILD) -o $(DESTDIR)/isupipe_darwin -ldflags "-s -w"
