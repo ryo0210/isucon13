@@ -398,6 +398,15 @@ func verifyUserSession(c echo.Context) error {
 	return nil
 }
 
+var altIconHash [32]byte
+
+func init() {
+	altImage, err := os.ReadFile(fallbackImage)
+	if err == nil {
+		altIconHash = sha256.Sum256(altImage)
+	}
+}
+
 func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (User, error) {
 	themeModel := ThemeModel{}
 	if err := tx.GetContext(ctx, &themeModel, "SELECT * FROM themes WHERE user_id = ?", userModel.ID); err != nil {
@@ -405,16 +414,19 @@ func fillUserResponse(ctx context.Context, tx *sqlx.Tx, userModel UserModel) (Us
 	}
 
 	var image []byte
+	var iconHash [32]byte
 	if err := tx.GetContext(ctx, &image, "SELECT image FROM icons WHERE user_id = ?", userModel.ID); err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return User{}, err
 		}
-		image, err = os.ReadFile(fallbackImage)
-		if err != nil {
-			return User{}, err
-		}
+		// image, err = os.ReadFile(fallbackImage)
+		// if err != nil {
+		// 	return User{}, err
+		// }
+		iconHash = altIconHash
+	} else {
+		iconHash = sha256.Sum256(image)
 	}
-	iconHash := sha256.Sum256(image)
 
 	user := User{
 		ID:          userModel.ID,
